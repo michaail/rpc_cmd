@@ -1,0 +1,1 @@
+Zdalne wywołanie komend linuxowych
