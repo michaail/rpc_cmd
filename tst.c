@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-
-int main (int argc, char *argv[])
+char * mal(FILE * desc)
 {
     char buffer[10];
     char *input = 0;
     size_t cur_len = 0;
     size_t cur_max = 0;
-    while (fgets(buffer, sizeof(buffer), stdin) != 0)
+    while (fgets(buffer, sizeof(buffer), desc) != 0)
     {
         size_t buf_len = strlen(buffer);
         if (cur_len + buf_len + 1 > cur_max)
@@ -27,11 +28,29 @@ int main (int argc, char *argv[])
         cur_len += buf_len;
     }
 
+    return input;
+}
 
-    printf("%s [%d]", input, (int)strlen(input));
-    free(input);
 
+int main (int argc, char *argv[])
+{
 
+    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+   
+    char * inBuf = mal(stdin);
+
+    //printf("%s\n", inBuf);
+
+    FILE *ls = popen("cat", "r");
+
+    fputs(inBuf, ls);
+
+    char * buf = mal(ls);
+
+    printf("%s [%d]", buf, (int)strlen(buf));
+    free(buf);
+
+    pclose(ls);
 
     
     return 0;
