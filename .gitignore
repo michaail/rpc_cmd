@@ -1,0 +1,4 @@
+rpc.code-workspace
+*.o
+rpc_cmd_client
+rpc_cmd_server

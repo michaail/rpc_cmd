@@ -15,11 +15,11 @@ void rpc_cmd_1(char *host, char* cmd, int argsC, char** argument, char* pipeBuff
 	cmdCallback  *result_1;
 	cmdParams  rcmd_1_arg;
 
-	
+	// przekazanie komendy do struktury
 	rcmd_1_arg.arguments.arguments_len = argsC;		// liczba argumentów wywołania
-	rcmd_1_arg.arguments.arguments_val = argument;
-	rcmd_1_arg.command = cmd;
-	rcmd_1_arg.pipeData = pipeBuff;
+	rcmd_1_arg.arguments.arguments_val = argument;	// wskaźnik na wartości argumentów
+	rcmd_1_arg.command = cmd;						// komeda do wykonania
+	rcmd_1_arg.pipeData = pipeBuff;					// wartość przechwyconego strumienia wejściowego | potok
 
 #ifndef	DEBUG
 	clnt = clnt_create (host, RPC_CMD, V1, "udp");
@@ -76,8 +76,7 @@ int main (int argc, char *argv[])
 
     //printf("%s [%d]", input, (int)strlen(input));
     
-
-	
+	// 		   host; cmd;	  l.arg cmd; arg cmd; potok
 	rpc_cmd_1 (host, argv[2], argc - 3, argv + 3, input);
 
 	free(input);
