@@ -33,6 +33,11 @@ void rpc_cmd_1(char *host, char* cmd, int argsC, char** argument, char* pipeBuff
 	if (result_1 == (cmdCallback *) NULL) {
 		clnt_perror (clnt, "call failed");
 	}
+	else
+	{
+		printf("%s\n", result_1->stdout);
+	}
+
 #ifndef	DEBUG
 	clnt_destroy (clnt);
 #endif	 /* DEBUG */
@@ -77,6 +82,13 @@ int main (int argc, char *argv[])
     //printf("%s [%d]", input, (int)strlen(input));
     
 	// 		   host; cmd;	  l.arg cmd; arg cmd; potok
+
+	if (!input)
+	{
+		input = (char*)malloc(sizeof(char)* 1);
+		printf("odczytu nie bylo\n");
+	}
+
 	rpc_cmd_1 (host, argv[2], argc - 3, argv + 3, input);
 
 	free(input);

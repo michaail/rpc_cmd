@@ -16,8 +16,11 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
 	
 	printf("%s\n", argp->pipeData);
 
-	FILE *ls = popen("ps", "r");		// wywołanie komendy
-	char buffer[10];
+    
+	FILE *ls = popen("ls", "r");		// wywołanie komendy
+	
+    // odczyt printu komendy komendy
+    char buffer[10];
 	char *input = 0;
     size_t cur_len = 0;
     size_t cur_max = 0;
@@ -39,7 +42,17 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
         strcpy(input + cur_len, buffer);
         cur_len += buf_len;
     }
-	
+
+    printf("%s\n", input);
+
+    char * err;
+
+    err = (char*)malloc(sizeof(char)* 1);
+
+    result.stderr = err;
+    result.stdout = input;
+	result.stat = 0;
+
 	/*
 	 * insert server code here
 	 */
