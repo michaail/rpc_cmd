@@ -39,15 +39,15 @@ int main (int argc, char *argv[])
    
     char * inBuf = mal(stdin);
 
-    //printf("%s\n", inBuf);
+    printf("%s\n", inBuf);
 
-    FILE *ls = popen("cat", "r");
-
-    fputs(inBuf, ls);
-
+    FILE *ls = popen("ps", "r");
+    //free(inBuf);
+    //fputs(inBuf, ls);
+    
     char * buf = mal(ls);
 
-    printf("%s [%d]", buf, (int)strlen(buf));
+    printf("%s [%d]", buf,(int)strlen(buf));
     free(buf);
 
     pclose(ls);
