@@ -74,87 +74,142 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
 	//printf("%s\n", argp->pipeData);
 
     // fd[0]: read end | fd[1]: write end
-    int stdIn[2];   // stdin    descriptors
-    int stdOut[2];  // stdout   descriptors
-    int stdErr[2];  // stderr   descriptors
+    // int stdIn[2];   // stdin    descriptors
+    // int stdOut[2];  // stdout   descriptors
+    // int stdErr[2];  // stderr   descriptors
+
+    int infd[2], outfd[2], errfd[2];
+    pipe(infd);
+    pipe(outfd);
+    pipe(errfd);
+
+    int pid;
+    if((pid=fork())==0)
+    {
+        dup2(infd[0], STDIN_FILENO);
+        dup2(outfd[1], STDOUT_FILENO);
+        dup2(errfd[1], STDERR_FILENO);
+
+        close(infd[0]);
+		close(outfd[1]);
+		close(errfd[1]);
+		close(infd[1]);
+		close(outfd[0]);
+		close(errfd[0]);
+
+        result.stat = WEXITSTATUS(system(cmd_));
+        exit(result.stat);
+
+    }
+    else
+    {
+        close(infd[0]);
+		close(outfd[1]);
+		close(errfd[1]);
+		write(infd[1], argp->pipeData, strlen(argp->pipeData)+1);
+		close(infd[1]);
+
+        int status;
+		waitpid(pid, &status, 0);
+		result.stat = WEXITSTATUS(status);
+
+		fcntl(outfd[0], F_SETFL, O_NONBLOCK);
+		fcntl(errfd[0], F_SETFL, O_NONBLOCK);
+		result.stdout = (char*)malloc(sizeof(char)*1024);
+		result.stderr = (char*)malloc(sizeof(char)*1024);
+		
+        int count=0, stdoutBufSize=0, stderrBufSize=0;
+		while((count = read(outfd[0], result.stdout+stdoutBufSize, 1024))>0){
+			stdoutBufSize += count;
+			result.stdout = (char*)realloc(result.stdout, sizeof(char)*(stdoutBufSize+1024));
+		}
+		while((count = read(errfd[0], result.stderr+stderrBufSize, 1024))>0){
+			stderrBufSize += count;
+			result.stderr = (char*)realloc(result.stderr, sizeof(char)*(stderrBufSize+1024));
+		}
+		result.stdout[stdoutBufSize] = 0;
+		result.stderr[stderrBufSize] = 0;
+
+        return &result;
+    }
 
     // Create pipes for stdS (unidirectional data channels)
     
 
     // Tu się problem zaczyna
-    if (pipe(stdIn) == -1) {
-        perror("pipe");
-    }
+    // if (pipe(stdIn) == -1) {
+    //     perror("pipe");
+    // }
     
-    //pipe(stdIn);
-    pipe(stdOut);
-    pipe(stdErr);
+    // //pipe(stdIn);
+    // pipe(stdOut);
+    // pipe(stdErr);
     
 
-    int cpid = fork();
-    if(cpid == 0)   // Child process
-    {
+    // int cpid = fork();
+    // if(cpid == 0)   // Child process
+    // {
         
-        if (dup2(stdIn[0], STDIN_FILENO) == -1) {
-            perror("dup2");
-        }
-        if (dup2(stdOut[1], STDOUT_FILENO) == -1) {
-            perror("dup2");
-        }
-        if (dup2(stdErr[1], STDERR_FILENO) == -1) {
-            perror("dup2");
-        }
+    //     // if (dup2(stdIn[0], STDIN_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
+    //     // if (dup2(stdOut[1], STDOUT_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
+    //     // if (dup2(stdErr[1], STDERR_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
         
-        //dup2(stdIn[0], STDIN_FILENO);
-        //dup2(stdOut[1], STDOUT_FILENO);
-        //dup2(stdErr[1], STDERR_FILENO);
+    //     //dup2(stdIn[0], STDIN_FILENO);
+    //     //dup2(stdOut[1], STDOUT_FILENO);
+    //     //dup2(stdErr[1], STDERR_FILENO);
 
-        //printf("forked duped\n");
-        close(stdIn[0]);
-        close(stdOut[1]);
-        close(stdErr[1]);
+    //     //printf("forked duped\n");
+    //     close(stdIn[0]);
+    //     close(stdOut[1]);
+    //     close(stdErr[1]);
 
-        // close(stdIn[1]);
-        // close(stdOut[0]);
-        // close(stdErr[0]);
+    //     // close(stdIn[1]);
+    //     // close(stdOut[0]);
+    //     // close(stdErr[0]);
 
-        //printf("debug fork\n");
-        // Cmd call in child process returns exit status
-        int status = WEXITSTATUS(system(cmd_));
-        //printf("%d\n", status);
-        exit(status);
-    }
-    else            // Parent process
-    {
-        // Sets Nonblocking mode for streams
-        close(stdIn[0]);
-        close(stdOut[1]);
-        close(stdErr[1]);
-        // write from buffer to stream
-        write(stdIn[1], argp->pipeData, strlen(argp->pipeData) + 1);
-        close(stdIn[1]);
-        //printf("to wait\n");
+    //     //printf("debug fork\n");
+    //     // Cmd call in child process returns exit status
+    //     int status = WEXITSTATUS(system(cmd_));
+    //     //printf("%d\n", status);
+    //     exit(status);
+    // }
+    // else            // Parent process
+    // {
+    //     // Sets Nonblocking mode for streams
+    //     close(stdIn[0]);
+    //     close(stdOut[1]);
+    //     close(stdErr[1]);
+    //     // write from buffer to stream
+    //     write(stdIn[1], argp->pipeData, strlen(argp->pipeData) + 1);
+    //     close(stdIn[1]);
+    //     //printf("to wait\n");
 
-        // Dotąd proces macierzysty działa OK
-        int sts;
-        waitpid(cpid, &sts, 0);             // Wait for child process to change state
-        result.stat = WEXITSTATUS(sts);     // returns exit status of child process
+    //     // Dotąd proces macierzysty działa OK
+    //     int sts;
+    //     waitpid(cpid, &sts, 0);             // Wait for child process to change state
+    //     result.stat = WEXITSTATUS(sts);     // returns exit status of child process
 
-        fcntl(stdOut[0], F_SETFL, O_NONBLOCK);
-        fcntl(stdErr[0], F_SETFL, O_NONBLOCK);
+    //     fcntl(stdOut[0], F_SETFL, O_NONBLOCK);
+    //     fcntl(stdErr[0], F_SETFL, O_NONBLOCK);
 
-        char *inputStdOut, *inputStdErr;
+    //     char *inputStdOut, *inputStdErr;
 
-        inputStdOut = readBuff(stdOut[0]);
+    //     inputStdOut = readBuff(stdOut[0]);
 
-        result.stdout = inputStdOut;
+    //     result.stdout = inputStdOut;
 
-        inputStdErr = readBuff(stdErr[0]);
+    //     inputStdErr = readBuff(stdErr[0]);
 
-        result.stderr = inputStdErr;
+    //     result.stderr = inputStdErr;
 
-        return &result;
-    }
+    //     return &result;
+    // }
 
 	// FILE *ls = popen("ls", "r");		// wywołanie komendy
 	
