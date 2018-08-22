@@ -46,8 +46,6 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
 {
 	static cmdCallback result;
 
-    
-
     // Length of whole command + arguments to call
     int wholeLen = strlen(argp->command);
     for(int i = 0; i < argp->arguments.arguments_len; i++)
@@ -78,24 +76,45 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
     // int stdOut[2];  // stdout   descriptors
     // int stdErr[2];  // stderr   descriptors
 
-    int infd[2], outfd[2], errfd[2];
-    pipe(infd);
-    pipe(outfd);
-    pipe(errfd);
+    int inputf[2], outputf[2], errorf[2];
+    pipe(inputf);
+    pipe(outputf);
+    pipe(errorf);
 
     int pid;
     if((pid=fork())==0)
     {
-        dup2(infd[0], STDIN_FILENO);
-        dup2(outfd[1], STDOUT_FILENO);
-        dup2(errfd[1], STDERR_FILENO);
 
-        close(infd[0]);
-		close(outfd[1]);
-		close(errfd[1]);
-		close(infd[1]);
-		close(outfd[0]);
-		close(errfd[0]);
+        //     // if (dup2(stdIn[0], STDIN_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
+    //     // if (dup2(stdOut[1], STDOUT_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
+    //     // if (dup2(stdErr[1], STDERR_FILENO) == -1) {
+    //     //     perror("dup2");
+    //     // }
+        
+        if (dup2(inputf[0], STDIN_FILENO)) 
+        {
+            /* code */
+        }
+
+        if (/* condition */) {
+            /* code */
+        }
+        
+        
+        dup2(inputf[0], STDIN_FILENO);
+        dup2(outputf[1], STDOUT_FILENO);
+        dup2(errorf[1], STDERR_FILENO);
+
+        close(inputf[0]);
+		close(outputf[1]);
+		close(errorf[1]);
+		close(inputf[1]);
+		close(outputf[0]);
+		close(errorf[0]);
 
         result.stat = WEXITSTATUS(system(cmd_));
         exit(result.stat);
@@ -103,27 +122,29 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
     }
     else
     {
-        close(infd[0]);
-		close(outfd[1]);
-		close(errfd[1]);
-		write(infd[1], argp->pipeData, strlen(argp->pipeData)+1);
-		close(infd[1]);
+        close(inputf[0]);
+		close(outputf[1]);
+		close(errorf[1]);
+        // wpisanie na wyjście stdin strumienia z potoku
+		write(inputf[1], argp->pipeData, strlen(argp->pipeData)+1);
+		close(inputf[1]);
 
         int status;
 		waitpid(pid, &status, 0);
 		result.stat = WEXITSTATUS(status);
 
-		fcntl(outfd[0], F_SETFL, O_NONBLOCK);
-		fcntl(errfd[0], F_SETFL, O_NONBLOCK);
+        // ustawienie kanałów na nieblokujące
+		fcntl(outputf[0], F_SETFL, O_NONBLOCK);
+		fcntl(errorf[0], F_SETFL, O_NONBLOCK);
 		result.stdout = (char*)malloc(sizeof(char)*1024);
 		result.stderr = (char*)malloc(sizeof(char)*1024);
 		
         int count=0, stdoutBufSize=0, stderrBufSize=0;
-		while((count = read(outfd[0], result.stdout+stdoutBufSize, 1024))>0){
+		while((count = read(outputf[0], result.stdout+stdoutBufSize, 1024))>0){
 			stdoutBufSize += count;
 			result.stdout = (char*)realloc(result.stdout, sizeof(char)*(stdoutBufSize+1024));
 		}
-		while((count = read(errfd[0], result.stderr+stderrBufSize, 1024))>0){
+		while((count = read(errorf[0], result.stderr+stderrBufSize, 1024))>0){
 			stderrBufSize += count;
 			result.stderr = (char*)realloc(result.stderr, sizeof(char)*(stderrBufSize+1024));
 		}
