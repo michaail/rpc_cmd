@@ -49,7 +49,7 @@ int main (int argc, char *argv[])
 	char *host;
 
 	if (argc < 3) {
-		printf ("usage: %s server_host\n", argv[0]);
+		printf ("usage: %s server_host command\n", argv[0]);
 		exit (1);
 	}
 	host = argv[1];

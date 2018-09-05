@@ -100,9 +100,9 @@ cmdCallback * rcmd_1_svc(cmdParams *argp, struct svc_req *rqstp)
             /* code */
         }
 
-        if (/* condition */) {
-            /* code */
-        }
+        // if (/* condition */) {
+        //     /* code */
+        // }
         
         
         dup2(inputf[0], STDIN_FILENO);
