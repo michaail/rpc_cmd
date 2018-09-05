@@ -1,3 +1,7 @@
+# rpc_cmd
+ONC RPC solution for running unix commands on remote host
+Prepared as an assignment project for distributed programming tools classes @ Poznan University of Technology 2018
+
 ## Usage
 To run both server and client sides you need to have rpc protocol available on machine. You can check this by running:
 
